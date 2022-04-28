@@ -1,11 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-import functools
 import multiprocessing
 import re  # 정규표현식
 import json # json
-import sys
-import boto3
 
 # 참고 naver 검색어 parsing https://brownbears.tistory.com/501
 # beautifulsoup https://wikidocs.net/85739
@@ -14,7 +11,6 @@ def lambda_handler(event, context):
     idx = 0
     naverUrls = []
     urls = []
-
     check = False
 
     def checkad(body):
@@ -46,6 +42,7 @@ def lambda_handler(event, context):
                     # title 추출
                     p = re.compile('se-title-text')
                     title = html.find('div', {'class':p}).get_text()
+
                     # body 추출
                     body = ""
                     for bitem in html.find_all('div', {'class':'se-section-text'}):
@@ -53,13 +50,14 @@ def lambda_handler(event, context):
                         if bitem == "" or bitem == " ":
                             continue
                         body = body + re.compile('[^가-힣0-9ㄱ-ㅎㅏ-ㅣa-zA-Z.^]+').sub(' ', bitem).strip() + ". "
+
                     # imgURL 추출
                     imgUrlL = []
                     for imgUrl in html.find_all('img', {'class': 'se-image-resource'}):
                         imgUrl = imgUrl.get('src')
                         imgUrl = imgUrl.replace('w80_blur', 'w800')
-                        #imgURL List 에 하나씩 추가
                         imgUrlL.append(imgUrl)
+
                     #check ad
                     for i in body.split('.'):
                         check = checkad(i)
@@ -70,6 +68,7 @@ def lambda_handler(event, context):
                     review["title"] = title
                     review["body"] = body
                     review["imgUrl"] = imgUrlL 
+
                     conn.send(review)
                     conn.close() 
                 except:
@@ -92,8 +91,6 @@ def lambda_handler(event, context):
                         for imgUrl in html.find_all('span', {'class':i}):
                             imgUrl = imgUrl.get('thumburl')
                             imgUrlL.append(imgUrl+'w2')
-
-         #check ad
                         for i in body.split('.'):
                             check = checkad(i)
                             if check == True:
@@ -145,7 +142,7 @@ def lambda_handler(event, context):
                             conn.send(review)
                             conn.close()  
                         
-            else :#tistory
+            else : #tistory
                 res = requests.get(url) 
                 html = res.text
                 soup = BeautifulSoup(html,'html.parser')
@@ -210,16 +207,12 @@ def lambda_handler(event, context):
                 else:
                     result = ''
     
-                
                 if result != '':
                     body = ''
                     for i in result.find_all('p'):
                         if len(i.get_text(strip=True)) != 0:
                             body = body + i.get_text(strip=True) + '.'
                         
-                    # if body == '' and result.find("div", {"class": "contents_style"})!= None:
-                    #     content = result.find("div", {"class": "contents_style"})
-                    #     body = content.get_text()
                     if body == '' and result.find_all("span")!= None:
                         for i in result.find_all("span"):
                             body = body + i.get_text(strip=True) + '.'
@@ -260,16 +253,13 @@ def lambda_handler(event, context):
             return {"error": e}
         
         reviews = []
-    
-        # 검색어
         inputValue = inputValue.replace(' ', '+' )
-    
-        # 구글 검색창 크롤링
+
         if (inputValue.find('리뷰') != -1 or inputValue.find('후기') != -1):
             GSearchUrl = 'https://www.google.com/search?q='+inputValue+'&sourceid=chrome&ie=UTF-8'
         else:
             GSearchUrl = 'https://www.google.com/search?q='+inputValue+'+리뷰'+'&sourceid=chrome&ie=UTF-8&start=0'
-    
+
         pages = 0
         while(len(reviews) <= 20):    
             GSearchUrl = GSearchUrl[:GSearchUrl.rfind('=') + 1]+ str(pages)
@@ -287,21 +277,14 @@ def lambda_handler(event, context):
                     try :
                         url = link.find('a')['href'][7:] 
                         url = url[:url.find('&')]
+
                         if (not 'tistory' in url) and (not 'naver' in url):
                             continue
                         elif 'naver' in url: 
                             nUrl = url.replace('https://', 'https://m.')
                             nUrl = url.replace('http://', 'https://m.')
                             naverUrls.append(nUrl)
-                            # url = url.replace('/m.','/')
-                            # if not url in naverUrls :
-                            #     idx += 1
-                            #     review = {'id' : idx, 'linkUrl' : url, 'source' : 'G'}
-                            #     reviews.append(review)
-                        # elif 'tistory' in url :
-                        #     idx += 1
-                        #     review = {'id' : idx, 'linkUrl' : url, 'source' : 'G'}
-                        #     reviews.append(review)
+
                         idx += 1
                         review = {'id' : idx, 'linkUrl' : url, 'source' : 'G'}
                         reviews.append(review)    
@@ -314,7 +297,6 @@ def lambda_handler(event, context):
         
         # 네이버 검색창 크롤링
         NSearchUrl = 'https://search.naver.com/search.naver?query='+inputValue+'&where=blog&sm=tab_viw.all'
-    
         response = requests.get(NSearchUrl)
     
         if response.status_code == 200 :
@@ -339,16 +321,11 @@ def lambda_handler(event, context):
             'body' : 'error'
             }
     
-        # return json.dumps(reviews, indent=2)
-    
         processes = []
         parent_connections = []
         for idx in range(len(reviews)):
-            # reviews[idx] = select(reviews[idx])
-            # return select(reviews[idx])
             parent_conn, child_conn = multiprocessing.Pipe()
             parent_connections.append(parent_conn)
-            
             process = multiprocessing.Process(target=select, args=(child_conn, reviews[idx]))
             processes.append(process)
             
@@ -359,7 +336,6 @@ def lambda_handler(event, context):
             process.join()
         
         delList = []
-        
         for parent_connection in parent_connections:
             review = parent_connection.recv()
             if "fail" in review :
@@ -371,6 +347,4 @@ def lambda_handler(event, context):
         
         for index in delList :
             del reviews[index - 1]
-        
-        
         return json.dumps(reviews, indent=2)

@@ -132,7 +132,6 @@ STATIC_URL = '/static/'
 
 # S3 설정을 위한 변수
 # AWS_xxx 의 변수들은 aws-S3, boto3 모듈을 위한 변수들이다.
-
 # 엑세스 키와 시크릿 키는 다른 파일로 작성, 임포트하여 사용
 AWS_ACCESS_KEY_ID = 'AKIA45ND5TKWN6LL7L5I'
 AWS_SECRET_ACCESS_KEY = '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'

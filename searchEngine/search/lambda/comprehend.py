@@ -1,4 +1,3 @@
-import json
 import boto3
 
 #Using boto3 to call the Comprehend API

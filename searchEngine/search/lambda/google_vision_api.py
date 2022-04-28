@@ -1,8 +1,6 @@
-import os, io
+import os
 from google.cloud import vision
-from google.cloud.vision_v1 import types
 import pandas as pd
-import boto3
 import json
 from multiprocessing import Pipe, Process
 

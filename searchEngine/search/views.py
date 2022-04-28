@@ -4,49 +4,15 @@ from django.shortcuts import render
 from searchEngine.settings import *
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-import os, io
-import networkx
-import re
-import json
+import networkx, re, emoji, json
 from konlpy.tag import Komoran
-import chardet
-from multiprocessing import Pipe, Process
-import multiprocessing
-
-# Create your views here.
-def index(request):
-    return render(request, "index.html", {'STATIC_URL': STATIC_URL})
-
-
-def search(request, searchVal):
-    # searchVal : 검색어
-    
-    return render(request, "search.html", {'STATIC_URL': STATIC_URL, 'searchVal':searchVal})
-
-
-class RawSentence:
-    def __init__(self, textIter):
-        if type(textIter) == str:
-            self.textIter = textIter.split('\n')
-        else:
-            self.textIter = textIter
-        self.rgxSplitter = re.compile('([.!?:](?:["\']|(?![0-9])))')
-
-    def __iter__(self):
-        for line in self.textIter:
-            ch = self.rgxSplitter.split(line)
-            for s in map(lambda a, b: a + b, ch[::2], ch[1::2]):
-                if not s: continue
-                yield s
 
 class RawSentenceReader:
     def __init__(self, text):
         self.text = text
-        #self.filepath = filepath
         self.rgxSplitter = re.compile('([.!?:](?:["\']|(?![0-9])))')
 
     def __iter__(self):
-        #for line in open(self.text, encoding='utf-8'):
         line = self.text
         ch = self.rgxSplitter.split(line)
         for s in map(lambda a, b: a + b, ch[::2], ch[1::2]):
@@ -169,25 +135,17 @@ class TextRank:
             if used.intersection(set(k)): continue
             both[k] = tuples[k]
             for w in k: used.add(w)
-
-        # for k in cand:
-        #    if k not in used or True: both[k] = ranks[k] * self.getI(k)
-
         return both
 
     def summarize(self, ratio=0.333):
         r = self.rank()
         ks = sorted(r, key=r.get, reverse=True)[int(len(r)*ratio) : int(len(r)*ratio+3 )]
-        #ks = sorted(r, key=r.get, reverse=True)[:int(len(r) * ratio)]
-        #ks = sorted(r, key=r.get, reverse=False)[:3]
-        #ks = sorted(r, key=r.get, reverse=True)[:3]
         return '\n'.join(map(lambda k: self.dictCount[k][:50], sorted(ks)))
 
-import emoji 
+
 @csrf_exempt
 def runtr(request):
     data = json.loads(request.body)
-    # print(data)
     tagger = Komoran()
     result = []
     for i in data:
@@ -203,3 +161,8 @@ def runtr(request):
             print(i['body'])
     return JsonResponse(result, safe=False)
 
+def index(request):
+    return render(request, "index.html", {'STATIC_URL': STATIC_URL})
+
+def search(request, searchVal):
+    return render(request, "search.html", {'STATIC_URL': STATIC_URL, 'searchVal':searchVal})

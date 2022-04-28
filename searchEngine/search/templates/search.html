@@ -106,7 +106,6 @@
             if (startNaver > data.length - endGoogle){
                 startNaver = data.length - endGoogle;
             }
-            console.log("startNaver :" + startNaver);
             let realIdx = 0;
             let adIdx = 0;
             for (let i = 0; i < startNaver; i++){
@@ -287,7 +286,6 @@
                 console.log(request.responseText);
             },
             success:function(data1){
-                console.log(data1);
                 console.log("crawling complete");
                 document.getElementsByClassName("progress-small-cmt")[0].innerHTML = "이미지로 광고판별 중...";
                 document.getElementsByClassName("progress")[0].style.width = "70%"
@@ -297,10 +295,9 @@
                     url:'https://sfrketwhk3.execute-api.ap-northeast-2.amazonaws.com/V4/vision', 
                     'data': data1,
                     error: function(request, status, error){
-                        console.log(request.responseText);
+                        console.log(error);
                     },
                     success:function(data2){ 
-                        console.log(data2);
                         var save_data = data2
                         document.getElementsByClassName("progress-small-cmt")[0].innerHTML = "긍부정 분석 및 요약 중..."
                         document.getElementsByClassName("progress")[0].style.width = "100%";
@@ -329,7 +326,6 @@
                             });
                         });
                         Promise.all([promise1, promise2]).then(values =>{
-                            console.log(values)
                             document.getElementsByClassName("progress-small-cmt")[0].innerHTML = "완료!";
                             showData(3, values)
                             document.getElementsByClassName("progressbar-back")[0].style.display = "none";
@@ -338,16 +334,6 @@
                         .catch(function(error){
                             console.log(error)
                         });
-                        // Promise.reject("Testing static reject").then(function(reason) {
-                        // // 호출되지 않음
-                        // }, function(reason) {
-                        //     console.log(reason); // "Testing static reject"
-                        // });
-                        // Promise.reject(new Error("fail")).then(function(error) {
-                        // // 호출되지 않음
-                        // }, function(error) {
-                        //     console.log(error); // Stacktrace
-                        // });
                     } 
                 });
             } 
@@ -355,7 +341,6 @@
     });
 
     // 페이지네이션
-
     var contentNum = 10;    // 한 페이지 당 contents 개수
     var pageNumm = 10;      // 한 번에 띄울 페이지 개수, 10개 이상이면 ▶ 표시 생기고 생략
     var str_real = '';     // realReview div.page innerHTML
@@ -368,7 +353,6 @@
             var pageNum_real = parseInt($('#realReview .box').length / contentNum);
             var pageNum_ad = parseInt($('#adReview .box').length / contentNum);
             
-            // realReview pagination
             if (pageNum_real > pageNumm){
                 str_real = '<div page=1>'
             }
@@ -390,7 +374,6 @@
             $('div[page = 1]').css("display","");
             page(1, 0);
 
-            // realReview pagination
             if (pageNum_ad > pageNumm){
                 str_ad = '<div page=1>'
             }
@@ -478,9 +461,5 @@
         adRv.style.display = "";
         pagination(0, 1);
     };
-
-    
-    
-    
 </script>
 </html>
